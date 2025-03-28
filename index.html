@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Juego de Emparejar</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: url('fondo.png') no-repeat center center fixed;
+      background-size: cover;
+      color: white;
+      text-align: center;
+      padding: 30px 10px;
+    }
+
+    #juego {
+      margin-bottom: 30px;
+    }
+
+    #puntos {
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+
+    #tablero {
+      display: grid;
+      grid-template-columns: repeat(10, 140px);
+      grid-template-rows: repeat(3, 140px);
+      gap: 40px;
+      justify-content: center;
+      margin-top: 30px;
+    }
+
+    .carta {
+      width: 160px;
+      height: 160px;
+      background-image: url('2.png');
+      background-size: cover;
+      background-position: center;
+      border: none;
+      font-weight: bold;
+      color: black;
+      font-size: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 6px;
+      box-sizing: border-box;
+    }
+
+    .carta.volteada {
+      background-image: none;
+      background-color: white;
+      color: black;
+      text-align: center;
+      overflow: hidden;
+      white-space: normal;
+      word-wrap: break-word;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+
+    #ranking {
+      margin-top: 40px;
+    }
+
+    #ranking h2 {
+      margin-bottom: 15px;
+    }
+
+    #tabla-puntajes {
+      margin-bottom: 20px;
+    }
+
+    .oculto {
+      display: none;
+    }
+
+    button {
+      padding: 8px 16px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="juego">
+    <h1 id="puntos">Puntos: 0</h1>
+    <div id="tablero"></div>
+  </div>
+  <div id="ranking" class="oculto">
+    <h2>🏆 Tabla de puntuación</h2>
+    <ol id="tabla-puntajes"></ol>
+    <button onclick="reiniciarJuego()">Jugar de nuevo</button>
+  </div>
+
+  <script>
+    const preguntas = [
+      "¿Qué tipo de dato se usa para números decimales?",
+      "¿Qué imprime System.out.println(\"Hola\" + 5 + 2);?",
+      "¿Qué operador se usa para comparar igualdad?",
+      "¿Qué palabra clave define una constante?",
+      "¿Qué tipo de dato almacena verdadero o falso?",
+      "¿Qué se importa para usar ArrayList?",
+      "¿Cómo se declara un ArrayList de Strings?",
+      "¿Qué método se usa para agregar un elemento?",
+      "¿Qué método se usa para obtener un elemento por índice?",
+      "¿Qué método devuelve el tamaño del ArrayList?",
+      "¿Qué método elimina un elemento por índice?",
+      "¿Qué método reemplaza un elemento en cierta posición?",
+      "¿Qué retorna contains(\"Hola\")?",
+      "¿Qué pasa si accedes a un índice fuera del rango?",
+      "¿Qué imprime System.out.println(lista.isEmpty()); si está vacía?"
+    ];
+
+    const respuestas = [
+      "double", "Hola52", "==", "final", "boolean",
+      "import java.util.ArrayList;",
+      "ArrayList<String> lista = new ArrayList<>();",
+      "add()", "get()", "size()",
+      "remove(int index)", "set(int index, value)",
+      "true o false", "Lanza IndexOutOfBoundsException", "true"
+    ];
+
+    let tablero = document.getElementById("tablero");
+    let puntos = 0;
+    let primera = null, segunda = null;
+    let pares = [];
+
+    function iniciarJuego() {
+      puntos = 0;
+      document.getElementById("puntos").textContent = "Puntos: 0";
+      document.getElementById("ranking").classList.add("oculto");
+      tablero.innerHTML = "";
+      pares = [];
+
+      const elementos = [...preguntas.map(p => ({texto: p, tipo: 'p'})),
+                         ...respuestas.map(r => ({texto: r, tipo: 'r'}))];
+
+      elementos.sort(() => Math.random() - 0.5);
+
+      elementos.forEach((item) => {
+        let btn = document.createElement("button");
+        btn.className = "carta";
+        btn.dataset.texto = item.texto;
+        btn.dataset.tipo = item.tipo;
+        btn.onclick = () => manejarCarta(btn);
+        tablero.appendChild(btn);
+        pares.push(btn);
+      });
+    }
+
+    function manejarCarta(carta) {
+      if (carta.classList.contains("volteada") || segunda) return;
+
+      carta.textContent = carta.dataset.texto;
+      carta.classList.add("volteada");
+
+      if (!primera) {
+        primera = carta;
+      } else {
+        segunda = carta;
+        setTimeout(verificarMatch, 800);
+      }
+    }
+
+    function verificarMatch() {
+      const texto1 = primera.dataset.texto;
+      const texto2 = segunda.dataset.texto;
+      const tipos = [primera.dataset.tipo, segunda.dataset.tipo];
+
+      let i1 = preguntas.indexOf(tipos[0] === 'p' ? texto1 : texto2);
+      let i2 = respuestas.indexOf(tipos[0] === 'p' ? texto2 : texto1);
+
+      if (i1 === i2) {
+        puntos += 10;
+        primera.disabled = true;
+        segunda.disabled = true;
+      } else {
+        puntos = Math.max(0, puntos - 5);
+        primera.classList.remove("volteada");
+        segunda.classList.remove("volteada");
+        primera.textContent = "";
+        segunda.textContent = "";
+      }
+
+      document.getElementById("puntos").textContent = "Puntos: " + puntos;
+      primera = segunda = null;
+
+      if (pares.every(c => c.disabled)) {
+        setTimeout(finalizarJuego, 500);
+      }
+    }
+
+    function finalizarJuego() {
+      const nombre = prompt("🎉 ¡Felicidades! Ingresa tu nombre:");
+      if (!nombre) return;
+
+      const registro = {nombre, puntos};
+      let ranking = JSON.parse(localStorage.getItem("rankingJava")) || [];
+      ranking.push(registro);
+      ranking.sort((a, b) => b.puntos - a.puntos);
+      ranking = ranking.slice(0, 6);
+      localStorage.setItem("rankingJava", JSON.stringify(ranking));
+
+      mostrarRanking();
+    }
+
+    function mostrarRanking() {
+      const lista = document.getElementById("tabla-puntajes");
+      lista.innerHTML = "";
+      const ranking = JSON.parse(localStorage.getItem("rankingJava")) || [];
+
+      ranking.forEach((reg, i) => {
+        const li = document.createElement("li");
+        li.textContent = `${i + 1}. ${reg.nombre} - ${reg.puntos} pts`;
+        lista.appendChild(li);
+      });
+
+      document.getElementById("ranking").classList.remove("oculto");
+    }
+
+    function reiniciarJuego() {
+      iniciarJuego();
+    }
+
+    iniciarJuego();
+  </script>
+</body>
+</html>
